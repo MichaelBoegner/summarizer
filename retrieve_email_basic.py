@@ -4,23 +4,27 @@ import requests
 import json
 import openai
 
-
 load_dotenv()
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 mailgun_api = os.getenv('MAILGUN_API_KEY')
 
-def get_events():
-    events_response = requests.get('https://api.mailgun.net/v3/sandboxeafee2d1c0004269895c6ddc06c8ba37.mailgun.org/events', auth=('api', mailgun_api), params=('limit=1'))
+
+def get_events_recieved():
+    events_recieved = []
+    events_response = requests.get('https://api.mailgun.net/v3/sandboxeafee2d1c0004269895c6ddc06c8ba37.mailgun.org/events', auth=('api', mailgun_api), params=('limit=25'))
     events_text = events_response.text
     events = json.loads(events_text)['items']
-    
-    print('EVENTS\n', events, '\n\n----------------\n\n')
-    return events
-
-def get_urls(events):
-    urls = []
     for event in events:
+        if event['message']['headers']['to'] == 'Excited User <mailgun@sandboxeafee2d1c0004269895c6ddc06c8ba37.mailgun.org>' and event['event'] == 'accepted':
+            events_recieved.append(event)
+    
+    print('EVENTS\n', events_recieved, '\n\n----------------\n\n')
+    return events_recieved
+
+def get_urls(events_recieved):
+    urls = []
+    for event in events_recieved:
         urls.append(event['storage']['url'])
     
     print('URLS\n', urls, '\n\n----------------\n\n')
@@ -80,13 +84,13 @@ def send_summary_to_senders(summary, senders, subjects):
     return summary_sent.text
 
 def main():
-    events = get_events()
-    senders = get_senders(events)
-    subjects = get_subjects(events)
-    urls = get_urls(events)
-    messages = get_messages(urls)
-    summary = generate_summary(messages)
-    send_summary_to_senders(summary, senders, subjects)
+    events_recieved = get_events_recieved()
+    # senders = get_senders(events_recieved)
+    # subjects = get_subjects(events_recieved)
+    urls = get_urls(events_recieved)
+    # messages = get_messages(urls)
+    # summary = generate_summary(messages)
+    # send_summary_to_senders(summary, senders, subjects)
     
 
 if __name__ == "__main__":
